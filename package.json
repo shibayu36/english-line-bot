@@ -11,7 +11,7 @@
   "private": true,
   "scripts": {
     "start": "wrangler dev",
-    "deploy": "wrangler publish",
+    "deploy": "./deploy.sh",
     "tail": "wrangler tail",
     "test": "vitest"
   },
