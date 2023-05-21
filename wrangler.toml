@@ -1,3 +1,8 @@
-name = "english-line-bot"
-main = "src/index.ts"
 compatibility_date = "2023-05-09"
+main = "src/index.ts"
+name = "english-line-bot"
+
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_id = "7dda7ad4-9d52-4ed3-90a6-5e649a7ff500" 
+database_name = "english-line-bot-db"
