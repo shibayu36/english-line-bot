@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-wrangler publish
+wrangler deploy
 
 # Parse .dev.vars and set secrets
 if [[ ! -f .dev.vars ]]; then
