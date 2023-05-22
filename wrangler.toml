@@ -5,4 +5,8 @@ name = "english-line-bot"
 [[d1_databases]]
 binding = "DB" # i.e. available in your Worker on env.DB
 database_id = "7dda7ad4-9d52-4ed3-90a6-5e649a7ff500" 
-database_name = "english-line-bot-db"
+database_name = "english-line-bot-db" 
+
+[[queues.producers]]
+binding = "QUEUE"
+queue = "english-line-bot-queue"
