@@ -1,10 +1,16 @@
 import { TextEventMessage, WebhookEvent } from "@line/bot-sdk";
-import { Hono } from "hono";
+import { Env, Hono } from "hono";
 import { Line } from "./line";
 import { OpenAI } from "./openai";
 import { Conversation } from "./tables";
 
-const app = new Hono();
+type Bindings = {
+  DB: D1Database;
+  CHANNEL_ACCESS_TOKEN: string;
+  OPENAI_API_KEY: string;
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
 
 app.get("*", (c) => c.text("Hello World!"));
 
@@ -33,14 +39,14 @@ app.post("/api/webhook", async (c) => {
 
   try {
     // Fetch 2 conversation from D1
-    const { results }: { results: Conversation[] } = await c.env.DB.prepare(
+    const { results } = await c.env.DB.prepare(
       `select * from conversations order by id desc limit 2`
-    ).all();
+    ).all<Conversation>();
     console.log(results);
 
     // Generate answer with OpenAI
     const openaiClient = new OpenAI(c.env.OPENAI_API_KEY);
-    const generatedMessage = await openaiClient.generateMessage(results, my_message);
+    const generatedMessage = await openaiClient.generateMessage(results!, my_message);
     console.log(generatedMessage);
     if (!generatedMessage || generatedMessage === "") throw new Error("No message generated");
 
@@ -61,4 +67,8 @@ app.post("/api/webhook", async (c) => {
   }
 });
 
-export default app;
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    return app.fetch(request, env, ctx);
+  },
+};
