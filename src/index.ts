@@ -5,6 +5,7 @@ import { OpenAI } from "./openai";
 import { Conversation } from "./tables";
 
 type QueueBody = {
+  text: string;
   replyToken: string;
 };
 
@@ -40,47 +41,53 @@ app.post("/api/webhook", async (c) => {
   }
 
   const { replyToken } = event;
-  const { text: my_message } = event.message as TextEventMessage;
+  const { text } = event.message as TextEventMessage;
 
-  c.env.QUEUE.send({ replyToken });
+  await c.env.QUEUE.send({ text, replyToken });
+  console.log("message sent to queue");
   return c.json({ message: "ok" });
+});
+
+async function handleQueue(message: Message<QueueBody>, env: Bindings) {
+  console.log("handleQueue called");
+  const { text, replyToken } = message.body;
+  console.log(text, replyToken);
 
   try {
     // Fetch 2 conversation from D1
-    const { results } = await c.env.DB.prepare(
+    const { results } = await env.DB.prepare(
       `select * from conversations order by id desc limit 2`
     ).all<Conversation>();
     console.log(results);
 
     // Generate answer with OpenAI
-    const openaiClient = new OpenAI(c.env.OPENAI_API_KEY);
-    const generatedMessage = await openaiClient.generateMessage(results!, my_message);
+    const openaiClient = new OpenAI(env.OPENAI_API_KEY);
+    const generatedMessage = await openaiClient.generateMessage(results!, text);
     console.log(generatedMessage);
     if (!generatedMessage || generatedMessage === "") throw new Error("No message generated");
 
     // Save generated answer to D1
-    await c.env.DB.prepare(`insert into conversations (my_message, bot_message) values (?, ?)`)
-      .bind(my_message, generatedMessage)
+    await env.DB.prepare(`insert into conversations (my_message, bot_message) values (?, ?)`)
+      .bind(text, generatedMessage)
       .run();
 
     // Reply to the user
-    const lineClient = new Line(c.env.CHANNEL_ACCESS_TOKEN);
+    const lineClient = new Line(env.CHANNEL_ACCESS_TOKEN);
     await lineClient.replyMessage(generatedMessage, replyToken);
-    return c.json({ message: "ok" });
   } catch (err: unknown) {
     if (err instanceof Error) console.error(err);
-    const lineClient = new Line(c.env.CHANNEL_ACCESS_TOKEN);
+    const lineClient = new Line(env.CHANNEL_ACCESS_TOKEN);
     await lineClient.replyMessage("I am not feeling well right now.", replyToken);
-    return c.json({ message: "ng" });
   }
-});
+}
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     return app.fetch(request, env, ctx);
   },
   async queue(batch: MessageBatch<QueueBody>, env: Bindings): Promise<void> {
-    let messages = JSON.stringify(batch.messages);
-    console.log(`consumed from our queue: ${messages}`);
+    for (const message of batch.messages) {
+      await handleQueue(message, env);
+    }
   },
 };

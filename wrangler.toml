@@ -10,3 +10,8 @@ database_name = "english-line-bot-db"
 [[queues.producers]]
 binding = "QUEUE"
 queue = "english-line-bot-queue"
+
+[[queues.consumers]]
+max_batch_size = 1
+max_batch_timeout = 30
+queue = "english-line-bot-queue"
