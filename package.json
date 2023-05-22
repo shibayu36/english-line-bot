@@ -9,7 +9,7 @@
   },
   "private": true,
   "scripts": {
-    "start": "wrangler dev --local --persist",
+    "start": "wrangler dev",
     "deploy": "./deploy.sh",
     "tail": "wrangler tail",
     "test": "vitest"
