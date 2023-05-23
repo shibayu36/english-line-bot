@@ -44,21 +44,17 @@ app.post("/api/webhook", async (c) => {
   const { text } = event.message as TextEventMessage;
 
   await c.env.QUEUE.send({ text, replyToken });
-  console.log("message sent to queue");
   return c.json({ message: "ok" });
 });
 
 async function handleQueue(message: Message<QueueBody>, env: Bindings) {
-  console.log("handleQueue called");
   const { text, replyToken } = message.body;
-  console.log(text, replyToken);
 
   try {
     // Fetch 2 conversation from D1
     const { results } = await env.DB.prepare(
       `select * from conversations order by id desc limit 2`
     ).all<Conversation>();
-    console.log(results);
 
     // Generate answer with OpenAI
     const openaiClient = new OpenAI(env.OPENAI_API_KEY);
