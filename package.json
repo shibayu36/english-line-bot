@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230511.0",
+    "@types/node": "^20.2.3",
+    "openai": "^3.2.1",
     "typescript": "^5.0.4",
     "vitest": "^0.31.0",
     "wrangler": "^3.0.0"
