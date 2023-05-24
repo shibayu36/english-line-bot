@@ -44,24 +44,35 @@ app.post("/api/webhook", async (c) => {
   return c.json({ message: "ok" });
 });
 
+app.post("/api/generate_message", async (c) => {
+  const { text } = await c.req.json();
+  const generatedMessage = await generateMessageAndSaveHistory(text, c.env);
+  return c.json({ message: generatedMessage });
+});
+
+async function generateMessageAndSaveHistory(text: string, env: Bindings) {
+  // Fetch 2 conversation from D1
+  const { results } = await env.DB.prepare(`select * from conversations order by id desc limit 4`).all<Conversation>();
+
+  // Generate answer with OpenAI
+  const openaiClient = new OpenAI(env.OPENAI_API_KEY);
+  const generatedMessage = await openaiClient.generateMessage(results!, text);
+  if (!generatedMessage || generatedMessage === "") throw new Error("No message generated");
+
+  // Save generated answer to D1
+  await env.DB.prepare(`insert into conversations (message, role) values (?, 'user')`).bind(text).run();
+  await env.DB.prepare(`insert into conversations (message, role) values (?, 'assistant')`)
+    .bind(generatedMessage)
+    .run();
+
+  return generatedMessage;
+}
+
 async function handleQueue(message: Message<QueueBody>, env: Bindings) {
   const { text, replyToken } = message.body;
 
   try {
-    // Fetch 2 conversation from D1
-    const { results } = await env.DB.prepare(
-      `select * from conversations order by id desc limit 2`
-    ).all<Conversation>();
-
-    // Generate answer with OpenAI
-    const openaiClient = new OpenAI(env.OPENAI_API_KEY);
-    const generatedMessage = await openaiClient.generateMessage(results!, text);
-    if (!generatedMessage || generatedMessage === "") throw new Error("No message generated");
-
-    // Save generated answer to D1
-    await env.DB.prepare(`insert into conversations (my_message, bot_message) values (?, ?)`)
-      .bind(text, generatedMessage)
-      .run();
+    const generatedMessage = await generateMessageAndSaveHistory(text, env);
 
     // Reply to the user
     const lineClient = new Line(env.CHANNEL_ACCESS_TOKEN);

@@ -21,8 +21,7 @@ export class OpenAI {
   public async generateMessage(records: Conversation[], message: string): Promise<string | undefined> {
     const messages: Array<ChatCompletionRequestMessage> = [...initPromptMessages];
     for (const record of records.reverse()) {
-      messages.push({ role: "user", content: record.my_message });
-      messages.push({ role: "assistant", content: record.bot_message });
+      messages.push({ role: record.role, content: record.message });
     }
     messages.push({ role: "user", content: message });
 
