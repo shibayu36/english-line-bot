@@ -36,3 +36,6 @@ npm exec -- wrangler queues create english-line-bot-queue
 ```
 npm run deploy
 ```
+
+### Customize
+If you want to customize your bot character, change a prompt in src/prompt.ts and deploy.
