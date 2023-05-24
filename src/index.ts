@@ -52,7 +52,7 @@ app.post("/api/generate_message", async (c) => {
 
 async function generateMessageAndSaveHistory(text: string, env: Bindings) {
   // Fetch 2 conversation from D1
-  const { results } = await env.DB.prepare(`select * from conversations order by id desc limit 4`).all<Conversation>();
+  const { results } = await env.DB.prepare(`select * from conversations order by id desc limit 15`).all<Conversation>();
 
   // Generate answer with OpenAI
   const openaiClient = new OpenAI(env.OPENAI_API_KEY);
