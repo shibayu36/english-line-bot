@@ -20,7 +20,6 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 app.post("/api/webhook", async (c) => {
   const data = await c.req.json();
-  console.log(JSON.stringify(data));
 
   const events: WebhookEvent[] = (data as any).events;
 
@@ -57,7 +56,6 @@ async function handleQueue(message: Message<QueueBody>, env: Bindings) {
     // Generate answer with OpenAI
     const openaiClient = new OpenAI(env.OPENAI_API_KEY);
     const generatedMessage = await openaiClient.generateMessage(results!, text);
-    console.log(generatedMessage);
     if (!generatedMessage || generatedMessage === "") throw new Error("No message generated");
 
     // Save generated answer to D1
