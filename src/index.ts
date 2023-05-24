@@ -18,8 +18,6 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-app.get("*", (c) => c.text("Hello World!"));
-
 app.post("/api/webhook", async (c) => {
   const data = await c.req.json();
   console.log(JSON.stringify(data));
