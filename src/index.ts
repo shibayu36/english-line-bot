@@ -40,7 +40,8 @@ app.post("/api/webhook", async (c) => {
   const { replyToken } = event;
   const { text } = event.message as TextEventMessage;
 
-  await c.env.QUEUE.send({ text, replyToken });
+  c.executionCtx.waitUntil(replyGeneratedMessage({ text, replyToken }, c.env));
+
   return c.json({ message: "ok" });
 });
 
@@ -49,6 +50,23 @@ app.post("/api/generate_message", async (c) => {
   const generatedMessage = await generateMessageAndSaveHistory(text, c.env);
   return c.json({ message: generatedMessage });
 });
+
+async function replyGeneratedMessage(body: QueueBody, env: Bindings) {
+  const { text, replyToken } = body;
+
+  try {
+    const generatedMessage = await generateMessageAndSaveHistory(text, env);
+    console.log(generatedMessage);
+
+    // Reply to the user
+    const lineClient = new Line(env.CHANNEL_ACCESS_TOKEN);
+    await lineClient.replyMessage(generatedMessage, replyToken);
+  } catch (err: unknown) {
+    if (err instanceof Error) console.error(err);
+    const lineClient = new Line(env.CHANNEL_ACCESS_TOKEN);
+    await lineClient.replyMessage("I am not feeling well right now.", replyToken);
+  }
+}
 
 async function generateMessageAndSaveHistory(text: string, env: Bindings) {
   // Fetch 2 conversation from D1
@@ -68,29 +86,4 @@ async function generateMessageAndSaveHistory(text: string, env: Bindings) {
   return generatedMessage;
 }
 
-async function handleQueue(message: Message<QueueBody>, env: Bindings) {
-  const { text, replyToken } = message.body;
-
-  try {
-    const generatedMessage = await generateMessageAndSaveHistory(text, env);
-
-    // Reply to the user
-    const lineClient = new Line(env.CHANNEL_ACCESS_TOKEN);
-    await lineClient.replyMessage(generatedMessage, replyToken);
-  } catch (err: unknown) {
-    if (err instanceof Error) console.error(err);
-    const lineClient = new Line(env.CHANNEL_ACCESS_TOKEN);
-    await lineClient.replyMessage("I am not feeling well right now.", replyToken);
-  }
-}
-
-export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    return app.fetch(request, env, ctx);
-  },
-  async queue(batch: MessageBatch<QueueBody>, env: Bindings): Promise<void> {
-    for (const message of batch.messages) {
-      await handleQueue(message, env);
-    }
-  },
-};
+export default app;
