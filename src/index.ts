@@ -1,17 +1,11 @@
 import { TextEventMessage, WebhookEvent } from "@line/bot-sdk";
-import { Env, Hono } from "hono";
+import { Hono } from "hono";
 import { Line } from "./line";
 import { OpenAI } from "./openai";
 import { Conversation } from "./tables";
 
-type QueueBody = {
-  text: string;
-  replyToken: string;
-};
-
 type Bindings = {
   DB: D1Database;
-  QUEUE: Queue<QueueBody>;
   CHANNEL_ACCESS_TOKEN: string;
   OPENAI_API_KEY: string;
 };
@@ -40,7 +34,7 @@ app.post("/api/webhook", async (c) => {
   const { replyToken } = event;
   const { text } = event.message as TextEventMessage;
 
-  c.executionCtx.waitUntil(replyGeneratedMessage({ text, replyToken }, c.env));
+  c.executionCtx.waitUntil(replyGeneratedMessage(c.env, text, replyToken));
 
   return c.json({ message: "ok" });
 });
@@ -51,9 +45,7 @@ app.post("/api/generate_message", async (c) => {
   return c.json({ message: generatedMessage });
 });
 
-async function replyGeneratedMessage(body: QueueBody, env: Bindings) {
-  const { text, replyToken } = body;
-
+async function replyGeneratedMessage(env: Bindings, text: string, replyToken: string) {
   try {
     const generatedMessage = await generateMessageAndSaveHistory(text, env);
     console.log(generatedMessage);
