@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { OpenAIApi, Configuration } = require("openai");
 
 const initPromptMessages = [

@@ -1,6 +1,6 @@
-import { Conversation } from "./tables";
-import { initPromptMessages } from "./prompt";
 import type { ChatCompletionRequestMessage, CreateChatCompletionResponse } from "openai";
+import { initPromptMessages } from "./prompt";
+import { Conversation } from "./tables";
 export class OpenAI {
   private readonly headers: Record<string, string>;
   private readonly baseUrl = "https://api.openai.com";
